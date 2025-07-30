@@ -112,7 +112,8 @@ test-cmd() {
 				eval "$cmd" &
 			fi
 			sub_pid=$!  # Capture the PID of the subprocess
-			echo "> waiting for $(ps -p $sub_pid -o cmd=)"
+			psc=$(ps -p $sub_pid -o cmd=)
+			echo "> waiting for: $sub_pid '$psc'"
 			wait "$sub_pid"
 			ret=$?
 			sub_pid=
@@ -305,6 +306,7 @@ chmod 600 /root/.ssh/authorized_keys
 mkdir -p ~/subdir
 echo "export ABA_TESTING=1  # No usage reporting" >> $HOME/.bashrc
 echo "export ABA_TESTING=1  # No usage reporting" >> $HOME/.bash_profile
+dnf update -y   # I guess we should do this and add to the vmw snap every now and then
 END
 
 	# Copy over the ssh config to /root on bastion (in case test_user = root)

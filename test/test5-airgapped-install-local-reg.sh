@@ -69,7 +69,8 @@ rm -rf sno compact standard
 
 int_bastion_hostname=registry.example.com
 int_bastion_vm_name=bastion-internal-$internal_bastion_rhel_ver
-export subdir=\~/subdir
+#export subdir=\~/subdir
+export subdir=subdir
 
 mylog ============================================================
 mylog Starting test $(basename $0)
@@ -174,6 +175,8 @@ init_bastion $int_bastion_hostname $int_bastion_vm_name aba-test $TEST_USER
 
 source <(cd mirror && normalize-mirror-conf)
 
+reg_ssh_user=$TEST_USER
+
 mylog "Using container mirror at $reg_host:$reg_port and using reg_ssh_user=$reg_ssh_user reg_ssh_key=$reg_ssh_key"
 
 test-cmd -h $reg_ssh_user@$int_bastion_hostname -m  "Create test subdir: '$subdir'" "mkdir -p $subdir" 
@@ -204,6 +207,8 @@ test-cmd -h $reg_ssh_user@$int_bastion_hostname -r 3 3 -m  "Loading cluster imag
 test-cmd -h $reg_ssh_user@$int_bastion_hostname -m  "Tidying up internal bastion" "rm -rf $subdir/aba/sno" 
 
 mylog "Running 'aba sno' on internal bastion"
+
+test-cmd -m "Copy over shortcuts.conf, needed for next test command" scp .shortcuts.conf $reg_ssh_user@$int_bastion_hostname:$subdir/aba/shortcuts.conf
 
 test-cmd -h $reg_ssh_user@$int_bastion_hostname -m  "Installing sno/iso" "aba --dir $subdir/aba sno --step iso" 
 #test-cmd -h $reg_ssh_user@$int_bastion_hostname -m  "Checking cluster operators" aba --dir $subdir/aba/sno cmd
@@ -304,7 +309,7 @@ test-cmd -h $reg_ssh_user@$int_bastion_hostname -m  "Listing VMs (should show 24
 
 myLog "Deploying test vote-app"
 test-cmd -h $TEST_USER@$int_bastion_hostname -m "Delete project 'demo'" "aba --dir $subdir/aba/$cluster_type --cmd 'oc delete project demo || true'" 
-test-cmd -r 2 10 -h $TEST_USER@$int_bastion_hostname -m "Create project 'demo'" "aba --dir $subdir/aba/$cluster_type --cmd 'oc new-project demo'" 
+test-cmd -r 4 20 -h $TEST_USER@$int_bastion_hostname -m "Create project 'demo'" "aba --dir $subdir/aba/$cluster_type --cmd 'oc new-project demo'" 
 test-cmd -h $TEST_USER@$int_bastion_hostname -m "Launch vote-app" "aba --dir $subdir/aba/$cluster_type --cmd 'oc new-app --insecure-registry=true --image $reg_host:$reg_port/$reg_path/sjbylo/flask-vote-app --name vote-app -n demo'"
 test-cmd -h $TEST_USER@$int_bastion_hostname -m "Wait for vote-app rollout" "aba --dir $subdir/aba/$cluster_type --cmd 'oc rollout status deployment vote-app -n demo'"
 
@@ -460,8 +465,8 @@ test-cmd -h $reg_ssh_user@$int_bastion_hostname -m "Output upgrade status" "oc a
 test-cmd -h $reg_ssh_user@$int_bastion_hostname -m "Set update channel" "oc adm upgrade channel fast-$ocp_version_major" 
 test-cmd -h $reg_ssh_user@$int_bastion_hostname -m "Show cluster version" "oc get clusterversion"
 test-cmd -h $reg_ssh_user@$int_bastion_hostname -m "Check cluster version is $ocp_version" "oc get clusterversion version -o jsonpath='{.status.desired.version}' | grep ^$ocp_version$; echo"
-test-cmd -h $reg_ssh_user@$int_bastion_hostname -m "Show availbale version[0]" "oc get clusterversion version -o jsonpath='{.status.availableUpdates[0].version}'; echo"
-test-cmd -h $reg_ssh_user@$int_bastion_hostname -m "Show availbale versions" "oc get clusterversion version -o jsonpath='{.status.availableUpdates[*].version}'; echo"
+test-cmd -h $reg_ssh_user@$int_bastion_hostname -m "Show available version[0]" "oc get clusterversion version -o jsonpath='{.status.availableUpdates[0].version}'; echo"
+test-cmd -h $reg_ssh_user@$int_bastion_hostname -m "Show available versions" "oc get clusterversion version -o jsonpath='{.status.availableUpdates[*].version}'; echo"
 
 test-cmd -h $reg_ssh_user@$int_bastion_hostname -m  "Showing all cluster operators" "oc get co"
 test-cmd -h $reg_ssh_user@$int_bastion_hostname -m "Waiting max ~30 mins for all cluster operators to be *fully* available?" "i=0; until oc get co|tail -n +2|grep -v VSphereCSIDriverOperatorCRProgressing|awk '{print \$3,\$4,\$5}'|tail -n +2|grep -v '^True False False$'|wc -l|grep ^0$; do let i=\$i+1; [ \$i -gt 180 ] && exit 1; sleep 10; echo -n \"\$i \"; done"
@@ -479,7 +484,10 @@ test-cmd -h $reg_ssh_user@$int_bastion_hostname -m "Check update  $ocp_version_d
 # Wait for https://docs.openshift.com/container-platform/4.11/openshift_images/image-configuration.html#images-configuration-cas_image-configuration 
 #test-cmd -m "Pausing for 60s to let OCP settle" sleep 60  # And wait for https://access.redhat.com/solutions/5514331 to take effect 
 
-### MESH STOPPED test-cmd -h $reg_ssh_user@$int_bastion_hostname -m "Deploying service mesh with test app" "$subdir/aba/test/deploy-mesh.sh"
+# Needed for acm-subs.yaml
+test-cmd -m "Copy over test dir for the deploy-mesh.sh file" scp -rp test $TEST_USER@$int_bastion_hostname:$subdir/aba
+# FIXME: 
+###  THIS STOPPED WORKING ### test-cmd -h $reg_ssh_user@$int_bastion_hostname -m "Deploying service mesh with test app" "$subdir/aba/test/deploy-mesh.sh"
 
 # Restart cluster test 
 test-cmd -h $reg_ssh_user@$int_bastion_hostname -m  "Log into cluster" ". <(aba --dir $subdir/aba/sno login)"
@@ -657,7 +665,7 @@ test-cmd -i -h $reg_ssh_user@$int_bastion_hostname -m  "Monitoring $cluster_name
 (
 	test-cmd -i -h $reg_ssh_user@$int_bastion_hostname -m "Showing cluster nodes" "cd $subdir/aba/$cluster_name && . <(aba shell) && oc get nodes && aba ls"
 	test-cmd -h $reg_ssh_user@$int_bastion_hostname -m "Cluster creation failed? Restarting all worker nodes" "aba --dir $subdir/aba/$cluster_name stop --wait --workers start"
-	test-cmd -h $reg_ssh_user@$int_bastion_hostname -m "Wait for cluster install to complete ..." "aba --dir $subdir/aba/$cluster_name"
+	test-cmd -h $reg_ssh_user@$int_bastion_hostname -m "Wait for cluster install to complete ..." "aba --dir $subdir/aba/$cluster_name mon"
 )
 
 test-cmd -h $reg_ssh_user@$int_bastion_hostname -m  "Log into cluster" ". <(aba --dir $subdir/aba/$cluster_name login)"

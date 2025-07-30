@@ -55,7 +55,8 @@ mylog
 ######################
 # Set up test 
 
-export subdir=\~/subdir   # Unpack repo tar into this dir on internal bastion
+#export subdir=\~/subdir   # Unpack repo tar into this dir on internal bastion
+export subdir=subdir   # Unpack repo tar into this dir on internal bastion
 
 # Exec script with any arg to skip reg. install and load
 if [ ! "$1" ]; then
@@ -195,6 +196,7 @@ test-cmd                                             -m "Delete loaded image set
 test-cmd -h $TEST_USER@$int_bastion_hostname         -m "Delete loaded image set 1 file on registry" "rm -v $subdir/aba/mirror/save/mirror_*.tar"
 
 test-cmd -h $TEST_USER@$int_bastion_hostname "rm -rf $subdir/aba/compact" 
+test-cmd -m "Copy over shortcuts.conf, needed for next test command" scp .shortcuts.conf $TEST_USER@$int_bastion_hostname:$subdir/aba/shortcuts.conf
 test-cmd -h $TEST_USER@$int_bastion_hostname -m "Install compact cluster with default_target=[$default_target]" "aba --dir $subdir/aba compact $default_target" 
 test-cmd -h $TEST_USER@$int_bastion_hostname -m "Deleting cluster (if it exists)" "aba --dir $subdir/aba/compact delete" 
 
@@ -401,6 +403,9 @@ test-cmd -h $TEST_USER@$int_bastion_hostname -r 15 3 -m "Run 'day2' on sno clust
 test-cmd -m "Pausing 30s" sleep 30
 
 test-cmd -h $TEST_USER@$int_bastion_hostname -r 15 3 -m "Checking available Operators on sno cluster" "aba --dir $subdir/aba/sno --cmd 'oc get packagemanifests -n openshift-marketplace' | grep advanced-cluster-management"
+
+# Needed for acm-subs.yaml
+test-cmd -m "Copy over test dir for the acm-*.yaml files" scp -rp test $TEST_USER@$int_bastion_hostname:$subdir/aba
 
 # Need to fetch the actual channel name from the operator catalog that's in use
 acm_channel=$(cat mirror/.index/redhat-operator-index-v$ocp_ver_major | grep ^advanced-cluster-management | awk '{print $NF}' | tail -1)

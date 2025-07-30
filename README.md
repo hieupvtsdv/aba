@@ -3,6 +3,8 @@
 Easily install an OpenShift cluster - "Cluster Zero" - into a fully or partially disconnected environment, either onto bare-metal or VMware (vSphere/ESXi).
 Because Aba is based on the [Agent-based installer](https://www.redhat.com/en/blog/meet-the-new-agent-based-openshift-installer-1) there is no need to configure a load balancer, a bootstrap node or even require DHCP.
 
+>> **For Red Hatters, it is now possible to download ready made, up-to-date and tested Aba install bundles from: https://drive.google.com/drive/u/0/folders/1sO7_G3f8cU1Y7oeUwTib8_sqn8FM_LZQ**
+
 ## Who should use Aba?
 
 Use Aba to quickly set up OpenShift in an air-gapped environment while letting it handle the heavy lifting for you.
@@ -17,7 +19,7 @@ Use Aba to quickly set up OpenShift in an air-gapped environment while letting i
    1. [Partially disconnected Scenario](#partially-disconnected-scenario)
    1. [Fully disconnected (air-gapped) Scenario](#fully-disconnected-air-gapped-scenario)
 1. [Installing OpenShift](#installing-openshift)
-1. [Creating a bundle archive with everything you need to install OpenShift in an fully disconnected (air-gapped) network](#Creating-a-bundle-archive-with-everything-you-need-to-install-OpenShift-in-a-fully-disconnected-air-gapped-network)
+1. [Creating an install bundle with everything you need to install OpenShift in an fully disconnected (air-gapped) network](#Creating-a-bundle-archive-with-everything-you-need-to-install-OpenShift-in-a-fully-disconnected-air-gapped-network)
 1. [Aba Flow Chart](#aba-flow-chart)
 1. [About configuration files](#configuration-files)
 1. [Customizing the Agent-based config files](#customizing-the-agent-based-config-files)
@@ -270,6 +272,8 @@ Note that the above 'disconnected scenario' can be repeated, for example to down
 
 **Please note that it is now recommended to use the above `aba bundle` command to initiate a fully air-gapped installation which will complete the below for you.**
 
+>> **For Red Hatters, it is now possible to download ready made, up-to-date and tested Aba install bundles from: https://drive.google.com/drive/u/0/folders/1sO7_G3f8cU1Y7oeUwTib8_sqn8FM_LZQ**
+
 In this scenario, your connected workstation has access to the Internet but no access to the private network.
 You also require a bastion in a private subnet.
 
@@ -335,7 +339,7 @@ Note that the above 'air-gapped workflow' can be repeated in the *exact same way
 For example, by:
 - editing the `save/imageset-save.yaml` file on the connected workstation to add more images or to fetch the latest images
 - running `aba save`
-- running `aba inc` (or aba tar or aba tarrepo) to create a bundle archive (see above)
+- running `aba inc` (or aba tar or aba tarrepo) to create an install bundle (see above)
 - unpacking the tar archive on the bastion
 - running `aba load` to load the images into the internal registry.
 
@@ -454,7 +458,7 @@ cd mycluster     # change to the directory with the agent-based install files, u
 
 [Back to top](#who-should-use-aba)
 
-## Creating a bundle archive with everything you need to install OpenShift in a fully disconnected (air-gapped) network
+## Creating an install bundle with everything you need to install OpenShift in a fully disconnected (air-gapped) network
 
 Do you need to download a set of images and CLI tools to install OpenShift into a fully disconnected (air-gapped) network?
 
